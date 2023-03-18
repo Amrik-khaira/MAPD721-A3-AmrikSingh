@@ -84,7 +84,7 @@ public class ChatMessageStore {
 			chatMessage.setId(c.getString(indexId));
 			chatMessage.setUserName(c.getString(indexUserName));
 			chatMessage.setBody(c.getString(indexMsgBody));
-			chatMessage.setChatMessageDate(c.getLong(indexMsgDate));
+			//chatMessage.setChatMessageDate(c.getLong(indexMsgDate));
 
 			list.add(chatMessage);
 
@@ -99,7 +99,6 @@ public class ChatMessageStore {
 		ContentValues cv = new ContentValues();
 		cv.put(ChatMessageTableMetaData.USER_NAME, chatMessage.getUserName());
 		cv.put(ChatMessageTableMetaData.MSG_BODY, chatMessage.getBody());
-		cv.put(ChatMessageTableMetaData.CHAT_MESSAGE_DATE, chatMessage.getChatMessageDate());
 
 		Uri uri = ChatMessageTableMetaData.CONTENT_URI;
 		Log.v(TAG, "{db} insert uri: " + uri);
@@ -119,7 +118,6 @@ public class ChatMessageStore {
 		ContentValues cv = new ContentValues();
 		cv.put(GeoChatProviderMetadata.ChatMessageTableMetaData.USER_NAME, chatMessage.getUserName());
 		cv.put(GeoChatProviderMetadata.ChatMessageTableMetaData.MSG_BODY, chatMessage.getBody());
-		cv.put(GeoChatProviderMetadata.ChatMessageTableMetaData.CHAT_MESSAGE_DATE, chatMessage.getChatMessageDate());
 
 		Uri uri = GeoChatProviderMetadata.ChatMessageTableMetaData.CONTENT_URI;
 		Log.v(TAG, "{db} insert uri: " + uri);

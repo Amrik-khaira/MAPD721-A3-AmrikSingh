@@ -1,24 +1,44 @@
 package com.zv.geochat.ui.fragment;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ListView;
 
 import com.zv.geochat.Constants;
 import com.zv.geochat.R;
+import com.zv.geochat.model.ChatMessage;
 import com.zv.geochat.service.ChatService;
+import com.zv.geochat.ui.adapter.ChatBubbleAdapter;
+import com.zv.geochat.ui.adapter.ChatMessagesAdapter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChatActivityFragment extends Fragment {
     private static final String TAG = "ChatActivityFragment";
-    EditText edtMessage;
+    private EditText edtMessage;
+    private ListView rv_messageList;
+    private ChatBubbleAdapter adapter;
+    private View view;
+
+
     public ChatActivityFragment() {
     }
 
@@ -26,83 +46,122 @@ public class ChatActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        View v = inflater.inflate(R.layout.fragment_chat, container, false);
-        Button btnJoinChat = (Button) v.findViewById(R.id.btnJoinChat);
-        btnJoinChat.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Sending to Chat Service: Join", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                joinChat();
-            }
-        });
+        view = inflater.inflate(R.layout.fragment_chat, container, false);
 
-        Button btnLeaveChat = (Button) v.findViewById(R.id.btnLeaveChat);
-        btnLeaveChat.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Sending to Chat Service: Leave", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                leaveChat();
-            }
-        });
+        initState();
+        return view;
+    }
 
-        Button btnSendMessage = (Button) v.findViewById(R.id.btnSendMessage);
-        btnSendMessage.setOnClickListener(new View.OnClickListener() {
+    private void initState() {
+        edtMessage = (EditText) view.findViewById(R.id.edtMessage);
+        rv_messageList = (ListView) view.findViewById(R.id.rv_messageList);
+        FloatingActionButton fab = (FloatingActionButton) view.findViewById(R.id.fab_send_message);
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Sending Message...", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
                 sendMessage(edtMessage.getText().toString());
+                edtMessage.getText().clear();
             }
         });
 
-        Button btnReceiveMessage = (Button) v.findViewById(R.id.btnReceiveMessage);
-        btnReceiveMessage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "New Message Arrived...", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                simulateOnMessage();
-            }
-        });
-
-        edtMessage = (EditText) v.findViewById(R.id.edtMessage);
-
-        return v;
+        adapter = new ChatBubbleAdapter(getActivity(), new ArrayList<ChatMessage>());
+        rv_messageList.setAdapter(adapter);
     }
 
-    private void joinChat(){
-        Bundle data = new Bundle();
-        data.putInt(ChatService.MSG_CMD, ChatService.CMD_JOIN_CHAT);
-        Intent intent = new Intent(getContext(), ChatService.class);
-        intent.putExtras(data);
-        getActivity().startService(intent);
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        registerServiceStateChangeReceiver();
     }
 
-    private void leaveChat(){
-        Bundle data = new Bundle();
-        data.putInt(ChatService.MSG_CMD, ChatService.CMD_LEAVE_CHAT);
-        Intent intent = new Intent(getContext(), ChatService.class);
-        intent.putExtras(data);
-        getActivity().startService(intent);
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        getActivity().unregisterReceiver(mServiceStateChangeReceiver);
     }
 
-    private void sendMessage(String messageText){
+    private void sendMessage(String messageText) {
         Bundle data = new Bundle();
-        data.putInt(ChatService.MSG_CMD, ChatService.CMD_SEND_MESSAGE);
+        data.putInt(ChatService.CMD, ChatService.CMD_SEND_MESSAGE);
         data.putString(ChatService.KEY_MESSAGE_TEXT, messageText);
         Intent intent = new Intent(getContext(), ChatService.class);
         intent.putExtras(data);
         getActivity().startService(intent);
     }
 
-    private void simulateOnMessage(){
-        Bundle data = new Bundle();
-        data.putInt(ChatService.MSG_CMD, ChatService.CMD_RECEIVE_MESSAGE);
-        Intent intent = new Intent(getContext(), ChatService.class);
-        intent.putExtras(data);
-        getActivity().startService(intent);
+    public void displayMessage(ChatMessage message) {
+        adapter.add(message);
+        adapter.notifyDataSetChanged();
+        scroll();
     }
 
+    private void scroll() {
+        rv_messageList.setSelection(rv_messageList.getCount() - 1);
+    }
+
+
+    //------- listening broadcasts from service
+    /**
+     * Listens for service state change broadcasts
+     */
+    private final BroadcastReceiver mServiceStateChangeReceiver = new BroadcastReceiver() {
+        private static final String TAG = "BroadcastReceiver";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            Bundle data = intent.getExtras();
+            Log.d(TAG, "received broadcast message from service: " + action);
+
+            if (Constants.BROADCAST_SERVER_CONNECTED.equals(action)) {
+                ChatMessage chatMessage = new ChatMessage("Status: ", "Connected", true);
+                displayMessage(chatMessage);
+            } else if (Constants.BROADCAST_SERVER_NOT_CONNECTED.equals(action)) {
+                ChatMessage chatMessage = new ChatMessage("Status: ", "Disconnected", true);
+                displayMessage(chatMessage);
+            } else if (Constants.BROADCAST_USER_JOINED.equals(action)) {
+                String userName = data.getString(Constants.CHAT_USER_NAME);
+                int userCount = data.getInt(Constants.CHAT_USER_COUNT, 0);
+                ChatMessage chatMessage = new ChatMessage(userName, " joined. Users: " + userCount, true);
+                displayMessage(chatMessage);
+            } else if (Constants.BROADCAST_USER_LEFT.equals(action)) {
+                String userName = data.getString(Constants.CHAT_USER_NAME);
+                int userCount = data.getInt(Constants.CHAT_USER_COUNT, 0);
+                ChatMessage chatMessage = new ChatMessage(userName, " left. Users: " + userCount, true);
+                displayMessage(chatMessage);
+            } else if (Constants.BROADCAST_NEW_MESSAGE.equals(action)) {
+                String userName = data.getString(Constants.CHAT_USER_NAME);
+                String message = data.getString(Constants.CHAT_MESSAGE);
+                ChatMessage chatMessage = new ChatMessage(userName, message);
+                Log.e("message", message);
+                displayMessage(chatMessage);
+            } else if (Constants.BROADCAST_USER_TYPING.equals(action)) {
+                // TODO
+            } else if (Constants.BROADCAST_MSG_LMT.equals(action)) {
+                //Added
+                String userName = "ChatService";
+                int msgLimit = data.getInt(Constants.CHAT_LIMIT);
+                String message = "Session closed after reaching the limit: " +
+                        Integer.toString(msgLimit) + " messages";
+                ChatMessage chatMessage = new ChatMessage(userName, message);
+                displayMessage(chatMessage);
+            } else {
+                Log.v(TAG, "do nothing for action: " + action);
+            }
+        }
+    };
+
+
+    private void registerServiceStateChangeReceiver() {
+        Log.d(TAG, "registering service state change receiver...");
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Constants.BROADCAST_NEW_MESSAGE);
+        intentFilter.addAction(Constants.BROADCAST_USER_TYPING);
+        intentFilter.addAction(Constants.BROADCAST_SERVER_CONNECTED);
+        intentFilter.addAction(Constants.BROADCAST_SERVER_NOT_CONNECTED);
+        intentFilter.addAction(Constants.BROADCAST_USER_JOINED);
+        intentFilter.addAction(Constants.BROADCAST_USER_LEFT);
+        intentFilter.addAction(Constants.BROADCAST_MSG_LMT);
+        getActivity().registerReceiver(mServiceStateChangeReceiver, intentFilter);
+    }
 }

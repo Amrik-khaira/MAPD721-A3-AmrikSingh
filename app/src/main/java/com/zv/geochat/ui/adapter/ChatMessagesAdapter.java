@@ -11,6 +11,7 @@ import com.zv.geochat.R;
 import com.zv.geochat.model.ChatMessage;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -23,7 +24,9 @@ public class ChatMessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
     private List<ChatMessage> items;
 
 
-    /** References to the views for each data item **/
+    /**
+     * References to the views for each data item
+     **/
     public class ChatMessageViewHolder extends SwipeToAction.ViewHolder<ChatMessage> {
         public TextView userName;
         public TextView chatMessageBody;
@@ -40,7 +43,9 @@ public class ChatMessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         }
     }
 
-    /** Constructor **/
+    /**
+     * Constructor
+     **/
     public ChatMessagesAdapter(List<ChatMessage> items) {
         this.items = items;
     }
@@ -69,17 +74,9 @@ public class ChatMessagesAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
         ChatMessageViewHolder vh = (ChatMessageViewHolder) holder;
         vh.userName.setText(item.getUserName());
         vh.chatMessageBody.setText(item.getBody());
-        Date date = new Date(item.getChatMessageDate());
-        long diff = System.currentTimeMillis() - date.getTime();
-        long MILLIS_PER_DAY = 24 * 60 * 60 * 1000L;
-        if (Math.abs(diff) > MILLIS_PER_DAY) {
-            SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy", Locale.getDefault());
-            vh.chatMessageDate.setText(format.format(date));
-        }
-        else {
-            SimpleDateFormat format = new SimpleDateFormat("hh:mm", Locale.getDefault());
-            vh.chatMessageDate.setText(format.format(date));
-        }
+
+        String messageDateTime = new SimpleDateFormat("MM/dd/yyyy HH:mm").format(Calendar.getInstance().getTime());
+        vh.chatMessageDate.setText(messageDateTime);
 
         vh.data = item;
     }

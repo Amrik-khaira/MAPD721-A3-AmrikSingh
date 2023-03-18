@@ -4,22 +4,26 @@ public class ChatMessage {
     private String id;
     private String userName;
     private String body;
-    private long chatMessageDate;
+    private boolean statusUpdate;
+
 
     public ChatMessage() {
     }
 
-    public ChatMessage(String userName, String body, long chatMessageDate) {
-        this.userName = userName;
-        this.body = body;
-        this.chatMessageDate = chatMessageDate;
+    public ChatMessage(String userName, String body) {
+        this(null, userName, body, false);
     }
 
-    public ChatMessage(String id, String userName, String body, long chatMessageDate) {
+    public ChatMessage(String userName, String body, boolean statusUpdate) {
+        this(null, userName,body,statusUpdate);
+    }
+
+
+    public ChatMessage(String id, String userName, String body, boolean statusUpdate) {
         this.id = id;
         this.userName = userName;
         this.body = body;
-        this.chatMessageDate = chatMessageDate;
+        this.statusUpdate = statusUpdate;
     }
 
 
@@ -47,12 +51,8 @@ public class ChatMessage {
         this.body = body;
     }
 
-    public long getChatMessageDate() {
-        return chatMessageDate;
-    }
-
-    public void setChatMessageDate(long chatMessageDate) {
-        this.chatMessageDate = chatMessageDate;
+    public boolean isStatusUpdate() {
+        return statusUpdate;
     }
 
     @Override
@@ -61,7 +61,7 @@ public class ChatMessage {
                 "id='" + id + '\'' +
                 ", userName='" + userName + '\'' +
                 ", body='" + body + '\'' +
-                ", chatMessageDate='" + chatMessageDate + '\'' +
                 '}';
     }
+
 }

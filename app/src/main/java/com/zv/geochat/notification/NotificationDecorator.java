@@ -9,7 +9,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.util.Log;
 
-import com.zv.geochat.ChatActivity;
+import com.zv.geochat.ui.activities.ChatActivity;
 import com.zv.geochat.R;
 
 public class NotificationDecorator {
@@ -18,11 +18,15 @@ public class NotificationDecorator {
     public static final String CHANNEL_ID = "geoChatChannel_1";
     private final Context context;
     private final NotificationManager notificationMgr;
+    private final MessageNotifierConfig messageNotifierConfig;
+
 
     public NotificationDecorator(Context context, NotificationManager notificationManager) {
         this.context = context;
         this.notificationMgr = notificationManager;
         createChannel(notificationManager, CHANNEL_ID);
+        this.messageNotifierConfig = new MessageNotifierConfig(context);
+
     }
 
     private void createChannel(NotificationManager notificationManager, String channelId){
@@ -61,4 +65,36 @@ public class NotificationDecorator {
             Log.e(TAG, e.getMessage());
         }
     }
+    public void displayExpandableNotification(String title, String contentText) {
+        if (messageNotifierConfig.isPlaySound()) {
+            Intent intent = new Intent(context, ChatActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
+                    intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            // notification message
+            try {
+
+
+                Notification noti = new Notification.Builder(context)
+                        .setSmallIcon(R.drawable.ic_message)
+                        .setContentTitle(title)
+                        .setContentText(contentText)
+                        .setContentIntent(contentIntent)
+                        .setAutoCancel(true)
+                        .setSound(messageNotifierConfig.getSoundUri())
+                        .setVibrate(messageNotifierConfig.getVibratePattern())
+                        .setLights(Color.BLUE, 1000, 1000)
+                        .setStyle(new Notification.BigTextStyle().bigText(contentText))
+                        .build();
+
+                noti.flags |= Notification.FLAG_AUTO_CANCEL;
+                notificationMgr.notify(0, noti);
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, e.getMessage());
+            }
+        }
+    }
+
 }

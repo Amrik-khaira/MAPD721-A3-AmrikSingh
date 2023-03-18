@@ -1,0 +1,10 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:key="key_notifications_new_message_limit"
+        android:title="@string/pref_header_message_limit"
+        android:entries="@array/limits"
+        android:defaultValue="2"
+        android:entryValues="@array/limit_values"/>
+
+</PreferenceScreen>
